@@ -3658,3 +3658,117 @@ window.updateShowingRange = updateShowingRange;
 window.openRegisterModal = openRegisterModal;
 window.openInquiryModal = openInquiryModal;
 
+// Hero Carousel Functionality
+let currentHeroSlide = 0;
+let heroSlideInterval = null;
+
+function initHeroCarousel() {
+    const slides = document.querySelectorAll('.hero-slide');
+    const indicators = document.querySelectorAll('.hero-indicator');
+    
+    if (slides.length === 0) return;
+    
+    // First, hide all slides explicitly
+    slides.forEach((slide, i) => {
+        slide.classList.remove('active');
+        slide.style.opacity = '0';
+        slide.style.visibility = 'hidden';
+        slide.style.pointerEvents = 'none';
+        slide.style.zIndex = '0';
+    });
+    
+    // Reset current slide
+    currentHeroSlide = 0;
+    
+    // Set initial slide
+    showSlide(0);
+    
+    // Auto-play is disabled - slides only change on manual navigation
+}
+
+function showSlide(index) {
+    const slides = document.querySelectorAll('.hero-slide');
+    const indicators = document.querySelectorAll('.hero-indicator');
+    
+    if (slides.length === 0) return;
+    
+    // Ensure index is within bounds
+    if (index >= slides.length) {
+        currentHeroSlide = 0;
+    } else if (index < 0) {
+        currentHeroSlide = slides.length - 1;
+    } else {
+        currentHeroSlide = index;
+    }
+    
+    // Update slides - ensure only one is visible
+    slides.forEach((slide, i) => {
+        if (i === currentHeroSlide) {
+            slide.classList.add('active');
+            slide.style.opacity = '1';
+            slide.style.visibility = 'visible';
+            slide.style.pointerEvents = 'auto';
+            slide.style.zIndex = '1';
+        } else {
+            slide.classList.remove('active');
+            slide.style.opacity = '0';
+            slide.style.visibility = 'hidden';
+            slide.style.pointerEvents = 'none';
+            slide.style.zIndex = '0';
+        }
+    });
+    
+    // Update indicators
+    indicators.forEach((indicator, i) => {
+        if (i === currentHeroSlide) {
+            indicator.classList.add('active');
+        } else {
+            indicator.classList.remove('active');
+        }
+    });
+}
+
+function changeSlide(direction) {
+    const slides = document.querySelectorAll('.hero-slide');
+    if (slides.length === 0) return;
+    
+    currentHeroSlide += direction;
+    
+    if (currentHeroSlide >= slides.length) {
+        currentHeroSlide = 0;
+    } else if (currentHeroSlide < 0) {
+        currentHeroSlide = slides.length - 1;
+    }
+    
+    showSlide(currentHeroSlide);
+}
+
+function currentSlide(index) {
+    showSlide(index - 1); // Convert to 0-based index
+}
+
+// Make functions globally available
+window.changeSlide = changeSlide;
+window.currentSlide = currentSlide;
+
+// Initialize carousel when DOM is ready
+function initializeCarousel() {
+    // Wait a bit to ensure DOM is fully loaded
+    setTimeout(() => {
+        initHeroCarousel();
+    }, 100);
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeCarousel);
+} else {
+    initializeCarousel();
+}
+
+// Also initialize on window load as backup
+window.addEventListener('load', () => {
+    if (document.querySelectorAll('.hero-slide.active').length === 0) {
+        initHeroCarousel();
+    }
+});
+

@@ -45,6 +45,20 @@
                         </ul>
                     </li>
                     
+                    <!-- Kids Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="kidsDropdown" role="button" data-bs-toggle="dropdown">
+                            Kids
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="products.html?category=childwear">Childwear</a></li>
+                            <li><a class="dropdown-item" href="products.html?category=kids-lehengas">Kids Lehengas</a></li>
+                            <li><a class="dropdown-item" href="products.html?category=kids-suits">Kids Suits</a></li>
+                            <li><a class="dropdown-item" href="products.html?category=kids-traditional">Traditional Wear</a></li>
+                            <li><a class="dropdown-item" href="products.html?category=kids-casual">Casual Wear</a></li>
+                        </ul>
+                    </li>
+                    
                     <!-- Collections Dropdown -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="collectionsDropdown" role="button" data-bs-toggle="dropdown">
@@ -116,31 +130,75 @@
         </div>
     </nav>
 
-    <!-- Hero Section -->
+    <!-- Hero Section with Carousel -->
     <section class="hero-section">
-        <div class="hero-overlay"></div>
-        <div class="container h-100">
-            <div class="row h-100 align-items-center">
-                <div class="col-lg-8">
-                    <div class="hero-content text-white">
-                        <h1 class="display-4 fw-bold mb-4 animate-fade-in">
-                            Quality Fabrics, <span class="text-warning">Trusted Suppliers</span>
-                        </h1>
-                        <p class="lead mb-4 animate-fade-in-delay">
-                            Discover premium textiles from around the world. From luxurious silk to durable cotton, 
-                            we connect buyers with the finest fabric suppliers globally.
-                        </p>
-                        <div class="hero-buttons animate-fade-in-delay-2">
-                            <a href="products.html" class="btn btn-warning btn-lg me-3">
-                                <i class="fas fa-search me-2"></i>Explore Fabrics
-                            </a>
-                            <a href="https://wa.me/919624113555?text=Hi! I'm interested in your fabric collection. Please tell me more about your products and ordering process." class="btn btn-outline-light btn-lg" target="_blank">
-                                <i class="fab fa-whatsapp me-2"></i>Order Now
-                            </a>
+        <div class="hero-carousel">
+            <!-- Slide 1 -->
+            <div class="hero-slide" style="background-image: url('Background-1.png');">
+                <div class="hero-overlay"></div>
+                <div class="container h-100">
+                    <div class="row h-100 align-items-center">
+                        <div class="col-lg-8">
+                            <div class="hero-content text-white">
+                                <h1 class="display-4 fw-bold mb-4 animate-fade-in">
+                                    Quality Fabrics, <span class="text-warning">Trusted Suppliers</span>
+                                </h1>
+                                <p class="lead mb-4 animate-fade-in-delay">
+                                    Discover premium textiles from around the world. From luxurious silk to durable cotton, 
+                                    we connect buyers with the finest fabric suppliers globally.
+                                </p>
+                                <div class="hero-buttons animate-fade-in-delay-2">
+                                    <a href="products.html" class="btn btn-warning btn-lg me-3">
+                                        <i class="fas fa-search me-2"></i>Explore Fabrics
+                                    </a>
+                                    <a href="https://wa.me/919624113555?text=Hi! I'm interested in your fabric collection. Please tell me more about your products and ordering process." class="btn btn-outline-light btn-lg" target="_blank">
+                                        <i class="fab fa-whatsapp me-2"></i>Order Now
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+            <!-- Slide 2 -->
+            <div class="hero-slide" style="background-image: url('Background-2.png');">
+                <div class="hero-overlay"></div>
+                <div class="container h-100">
+                    <div class="row h-100 align-items-center">
+                        <div class="col-lg-8">
+                            <div class="hero-content text-white">
+                                <h1 class="display-4 fw-bold mb-4 animate-fade-in">
+                                    Elegant Collections, <span class="text-warning">Timeless Style</span>
+                                </h1>
+                                <p class="lead mb-4 animate-fade-in-delay">
+                                    Experience the finest in traditional and contemporary fashion. From bridal couture to everyday elegance, 
+                                    find your perfect style with our curated fabric collections.
+                                </p>
+                                <div class="hero-buttons animate-fade-in-delay-2">
+                                    <a href="products.html" class="btn btn-warning btn-lg me-3">
+                                        <i class="fas fa-search me-2"></i>Explore Collections
+                                    </a>
+                                    <a href="https://wa.me/919624113555?text=Hi! I'm interested in your fabric collection. Please tell me more about your products and ordering process." class="btn btn-outline-light btn-lg" target="_blank">
+                                        <i class="fab fa-whatsapp me-2"></i>Order Now
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Carousel Navigation Arrows -->
+        <button class="hero-carousel-btn hero-carousel-prev" onclick="changeSlide(-1)">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <button class="hero-carousel-btn hero-carousel-next" onclick="changeSlide(1)">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+        <!-- Carousel Indicators -->
+        <div class="hero-carousel-indicators">
+            <span class="hero-indicator" onclick="currentSlide(1)"></span>
+            <span class="hero-indicator" onclick="currentSlide(2)"></span>
         </div>
     </section>
 
@@ -170,14 +228,14 @@
                     </div>
                 </div>
                 
-                <!-- Fusion Wear -->
+                <!-- Suits -->
                 <div class="col-lg-6 col-md-6">
                     <div class="category-card fusion-card">
                         <div class="category-image">
-                            <img src="images/lehengas/03__RANIKA_TAARANI-B1.jpeg" alt="Fusion Wear" class="img-fluid">
+                            <img src="images/lehengas/03__RANIKA_TAARANI-B1.jpeg" alt="Suits" class="img-fluid">
                             <div class="category-overlay">
                                 <div class="category-content">
-                                    <h3 class="category-title">FUSION WEAR</h3>
+                                    <h3 class="category-title">SUITS</h3>
                                     <p class="category-subtitle">Modern meets traditional in perfect harmony</p>
                                     <a href="products.html?category=indo-western" class="btn btn-light btn-sm">Explore Collection</a>
                                 </div>
@@ -186,15 +244,15 @@
                     </div>
                 </div>
                 
-                <!-- Sherwanis -->
+                <!-- Childwear -->
                 <div class="col-lg-6 col-md-6">
                     <div class="category-card sherwani-card">
                         <div class="category-image">
-                            <img src="images/lehengas/04__RUPA_TAARANI-C1.jpeg" alt="Sherwanis" class="img-fluid">
+                            <img src="images/lehengas/04__RUPA_TAARANI-C1.jpeg" alt="Childwear" class="img-fluid">
                             <div class="category-overlay">
                                 <div class="category-content">
-                                    <h3 class="category-title">SHERWANIS</h3>
-                                    <p class="category-subtitle">Regal attire for special occasions</p>
+                                    <h3 class="category-title">CHILDWEAR</h3>
+                                    <p class="category-subtitle">Adorable outfits for little ones</p>
                                     <a href="products.html?category=sherwanis" class="btn btn-light btn-sm">Explore Collection</a>
                                 </div>
                             </div>
@@ -214,6 +272,77 @@
                                     <a href="products.html?category=sarees" class="btn btn-light btn-sm">Explore Collection</a>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Our Clients / Video Gallery Section -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row text-center mb-5">
+                <div class="col-lg-8 mx-auto">
+                    <h2 class="section-title">Our Clients</h2>
+                    <p class="text-muted">See what our satisfied customers have to say about our products and services</p>
+                </div>
+            </div>
+            <div class="row g-4">
+                <!-- Video 1 -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="video-card">
+                        <div class="video-wrapper">
+                            <iframe 
+                                src="https://www.youtube.com/embed/dQw4w9WgXcQ" 
+                                title="Client Testimonial 1" 
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowfullscreen
+                                class="video-iframe">
+                            </iframe>
+                        </div>
+                        <div class="video-info p-3">
+                            <h5 class="mb-2">Client Testimonial 1</h5>
+                            <p class="text-muted small mb-0">Hear from our satisfied customers</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Video 2 -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="video-card">
+                        <div class="video-wrapper">
+                            <iframe 
+                                src="https://www.youtube.com/embed/dQw4w9WgXcQ" 
+                                title="Client Testimonial 2" 
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowfullscreen
+                                class="video-iframe">
+                            </iframe>
+                        </div>
+                        <div class="video-info p-3">
+                            <h5 class="mb-2">Client Testimonial 2</h5>
+                            <p class="text-muted small mb-0">Real experiences from our clients</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Video 3 -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="video-card">
+                        <div class="video-wrapper">
+                            <iframe 
+                                src="https://www.youtube.com/embed/dQw4w9WgXcQ" 
+                                title="Client Testimonial 3" 
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowfullscreen
+                                class="video-iframe">
+                            </iframe>
+                        </div>
+                        <div class="video-info p-3">
+                            <h5 class="mb-2">Client Testimonial 3</h5>
+                            <p class="text-muted small mb-0">Success stories from our community</p>
                         </div>
                     </div>
                 </div>
@@ -386,7 +515,7 @@
                             </h2>
                             <div id="collapse1" class="accordion-collapse collapse show" aria-labelledby="faq1" data-bs-parent="#faqAccordion">
                                 <div class="accordion-body">
-                                    We offer a wide variety of premium fabrics including cotton, silk, linen, organza, velvet, chiffon, and many more. Our collection features traditional Indian fabrics like sarees, lehenga materials, sherwani fabrics, and contemporary fusion wear materials.
+                                    We offer a wide variety of premium fabrics including cotton, silk, linen, organza, velvet, chiffon, and many more. Our collection features traditional Indian fabrics like sarees, lehenga materials, suits, and childwear materials.
                                 </div>
                             </div>
                         </div>

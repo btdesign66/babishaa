@@ -2705,26 +2705,70 @@ const sampleFabrics = [
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing app...');
     
-    // Initialize immediately
-    initializeApp();
-    initializeInteractiveFeatures();
+    try {
+        // Initialize immediately
+        initializeApp();
+        initializeInteractiveFeatures();
+    } catch (error) {
+        console.error('Error during initialization:', error);
+    }
     
     // Also try after a short delay as fallback
     setTimeout(function() {
         console.log('Fallback initialization triggered');
-        const currentPage = getCurrentPage();
-        if (currentPage === 'products') {
-            if (fabricData && fabricData.length > 0 && (!filteredFabrics || filteredFabrics.length === 0)) {
-                filteredFabrics = [...fabricData];
+        try {
+            const currentPage = getCurrentPage();
+            console.log('Current page detected:', currentPage);
+            
+            if (currentPage === 'products') {
+                // Ensure data is loaded
+                if (!fabricData || fabricData.length === 0) {
+                    console.log('fabricData is empty, reloading from sampleFabrics');
+                    fabricData = [...sampleFabrics];
+                }
+                
+                if (fabricData && fabricData.length > 0 && (!filteredFabrics || filteredFabrics.length === 0)) {
+                    filteredFabrics = [...fabricData];
+                }
+                
+                // Check if products container exists
+                const fabricGrid = document.getElementById('fabricGrid');
+                if (fabricGrid) {
+                    displayFabrics();
+                } else {
+                    console.error('Products container not found!');
+                }
             }
-            displayFabrics();
+        } catch (error) {
+            console.error('Error in fallback initialization:', error);
         }
     }, 500);
+    
+    // Additional fallback for Netlify - check if script loaded correctly
+    setTimeout(function() {
+        const currentPage = getCurrentPage();
+        if (currentPage === 'products') {
+            const fabricGrid = document.getElementById('fabricGrid');
+            if (fabricGrid && (!fabricData || fabricData.length === 0)) {
+                console.warn('Products page detected but no data loaded. Attempting recovery...');
+                fabricData = [...sampleFabrics];
+                filteredFabrics = [...fabricData];
+                displayFabrics();
+            }
+        }
+    }, 1000);
 });
 
 // Initialize App Function
 function initializeApp() {
     console.log('Initializing app...');
+    
+    // Ensure sampleFabrics is defined
+    if (typeof sampleFabrics === 'undefined' || !sampleFabrics || sampleFabrics.length === 0) {
+        console.error('sampleFabrics is not defined or empty!');
+        return;
+    }
+    
     fabricData = [...sampleFabrics];
     filteredFabrics = [...fabricData];
     
@@ -2735,26 +2779,33 @@ function initializeApp() {
     const currentPage = getCurrentPage();
     console.log('Current page:', currentPage);
     
-    switch(currentPage) {
-        case 'products':
-            console.log('Initializing products page...');
-            initializeProductsPage();
-            break;
-        case 'index':
-            console.log('Initializing home page...');
-            initializeHomePage();
-            break;
-        default:
-            console.log('Initializing general page...');
-            initializeGeneralPage();
+    try {
+        switch(currentPage) {
+            case 'products':
+                console.log('Initializing products page...');
+                initializeProductsPage();
+                break;
+            case 'index':
+                console.log('Initializing home page...');
+                initializeHomePage();
+                break;
+            default:
+                console.log('Initializing general page...');
+                initializeGeneralPage();
+        }
+    } catch (error) {
+        console.error('Error initializing page:', error);
     }
 }
 
 // Get Current Page
 function getCurrentPage() {
     const path = window.location.pathname;
-    if (path.includes('products.html')) return 'products';
-    if (path.includes('index.html') || path === '/') return 'index';
+    const href = window.location.href;
+    
+    // Check for products page - handle both localhost and Netlify paths
+    if (path.includes('products') || href.includes('products')) return 'products';
+    if (path.includes('index') || path === '/' || path === '' || href.endsWith('/')) return 'index';
     return 'general';
 }
 
@@ -2762,19 +2813,39 @@ function getCurrentPage() {
 function initializeProductsPage() {
     console.log('Setting up products page...');
     
+    // Ensure fabricData is loaded
+    if (!fabricData || fabricData.length === 0) {
+        console.log('fabricData is empty, loading from sampleFabrics');
+        if (typeof sampleFabrics !== 'undefined' && sampleFabrics.length > 0) {
+            fabricData = [...sampleFabrics];
+        } else {
+            console.error('sampleFabrics is not available!');
+            return;
+        }
+    }
+    
     // Ensure filteredFabrics is initialized with all products
     if (filteredFabrics.length === 0) {
         filteredFabrics = [...fabricData];
     }
     
-    initializeFilters();
-    initializeSearch();
-    initializeSorting();
-    initializePagination();
-    initializeMobileFilterSidebar();
+    try {
+        initializeFilters();
+        initializeSearch();
+        initializeSorting();
+        initializePagination();
+        initializeMobileFilterSidebar();
+    } catch (error) {
+        console.error('Error initializing filters/search:', error);
+    }
     
     // Handle URL parameters first (this will call displayFabrics if needed)
-    const hasURLParams = handleURLParameters();
+    let hasURLParams = false;
+    try {
+        hasURLParams = handleURLParameters();
+    } catch (error) {
+        console.error('Error handling URL parameters:', error);
+    }
     
     // Only display fabrics if handleURLParameters didn't already do it
     if (!hasURLParams) {
@@ -2792,6 +2863,8 @@ function initializeProductsPage() {
             displayFabrics();
         } else {
             console.error('No fabrics available to display!');
+            console.error('fabricData:', fabricData);
+            console.error('sampleFabrics length:', typeof sampleFabrics !== 'undefined' ? sampleFabrics.length : 'undefined');
         }
     }
 }

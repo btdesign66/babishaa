@@ -97,7 +97,7 @@ CREATE TRIGGER update_admin_users_updated_at BEFORE UPDATE ON admin_users
 INSERT INTO admin_users (email, password, name, role)
 VALUES (
     'admin@babisha.com',
-    '$2a$10$rOzJqXjZJZJZJZJZJZJZJ.uJZJZJZJZJZJZJZJZJZJZJZJZJZJZJZJ',
+    '$2a$10$WbCNVqFViLzlycQ.1VF/7ONFdBuzsndPLXancjhYGrMgvHOGi2Vxq',
     'Admin User',
     'admin'
 )

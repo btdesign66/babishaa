@@ -258,12 +258,19 @@ document.getElementById('blogForm').addEventListener('submit', async (e) => {
             }
             document.getElementById('blogImagePreview').innerHTML = '';
         } else {
-            const error = await response.json();
-            showAlert(error.error || 'Failed to save blog', 'error');
+            let errorMessage = 'Failed to save blog';
+            try {
+                const error = await response.json();
+                errorMessage = error.error || errorMessage;
+            } catch (e) {
+                errorMessage = `Server error: ${response.status} ${response.statusText}`;
+            }
+            showAlert(errorMessage, 'error');
+            console.error('Blog save error:', errorMessage);
         }
     } catch (error) {
         console.error('Error saving blog:', error);
-        showAlert('Error saving blog', 'error');
+        showAlert('Error saving blog: ' + error.message, 'error');
     }
 });
 

@@ -24,9 +24,14 @@ async function initializeDatabase() {
         const supabaseDb = require('./database');
         const supabaseStorage = require('./storage-service');
         
-        // Test database connection
+        // Test database connection with timeout
         try {
-            await supabaseDb.pool.query('SELECT NOW()');
+            const testQuery = Promise.race([
+                supabaseDb.pool.query('SELECT NOW()'),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 5000))
+            ]);
+            
+            await testQuery;
             db = supabaseDb;
             storage = supabaseStorage;
             useSupabase = true;
@@ -34,14 +39,17 @@ async function initializeDatabase() {
             
             // Test Supabase Storage
             try {
-                const { data: buckets } = await supabaseDb.supabase.storage.listBuckets();
+                const { data: buckets, error: storageErr } = await supabaseDb.supabase.storage.listBuckets();
+                if (storageErr) throw storageErr;
                 console.log('✅ Supabase Storage connected');
             } catch (storageErr) {
                 console.warn('⚠️ Supabase Storage not available, using local storage');
+                console.warn('   Error:', storageErr.message);
             }
         } catch (dbErr) {
             console.warn('⚠️ Supabase database connection failed, using JSON file fallback');
             console.warn('   Error:', dbErr.message);
+            console.warn('   The admin panel will work with local JSON storage');
             db = require('./database-fallback');
             storage = null;
             useSupabase = false;
@@ -53,10 +61,9 @@ async function initializeDatabase() {
         storage = null;
         useSupabase = false;
     }
+    
+    return { db, storage, useSupabase };
 }
-
-// Initialize immediately (but don't block)
-initializeDatabase();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -686,29 +693,20 @@ async function startServer() {
     try {
         await ensureDirectories();
         
-        // Wait a moment for database initialization
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Initialize database (with fallback)
+        const dbInit = await initializeDatabase();
+        db = dbInit.db;
+        storage = dbInit.storage;
+        useSupabase = dbInit.useSupabase;
         
-        // Re-check if Supabase is working, otherwise use fallback
+        // Initialize admin user if using JSON fallback
         if (!useSupabase) {
-            try {
-                await db.pool.query('SELECT NOW()');
-                useSupabase = true;
-                console.log('✅ Supabase connection established');
-            } catch (err) {
-                // Use fallback
-                if (db.pool) {
-                    // If db has pool but connection failed, switch to fallback
-                    db = require('./database-fallback');
-                    storage = null;
-                }
-                await initializeAdmin();
-            }
+            await initializeAdmin();
         }
         
         app.listen(PORT, () => {
             console.log(`🚀 BABISHA Admin Server running on http://localhost:${PORT}`);
-            if (useSupabase && db.pool) {
+            if (useSupabase) {
                 console.log(`📊 Using Supabase PostgreSQL database`);
                 if (storage) {
                     console.log(`📸 Using Supabase Storage for images`);
@@ -718,22 +716,33 @@ async function startServer() {
             } else {
                 console.log(`📁 Using JSON file storage (data/ folder)`);
                 console.log(`📸 Using local file storage (uploads/ folder)`);
-                console.log(`⚠️  To use Supabase, configure supabase-config.js with correct password and Service Role Key`);
-                console.log(`✅ Admin panel will work with local JSON storage`);
+                console.log(`✅ Admin panel is fully functional with local storage`);
+                console.log(`💡 To use Supabase, configure supabase-config.js with:`);
+                console.log(`   - Database password in connection string`);
+                console.log(`   - Service Role Key (not publishable key)`);
             }
+            console.log(`\n🔐 Admin Login: admin@babisha.com / admin123`);
         });
     } catch (error) {
         console.error('❌ Server initialization error:', error);
         console.error('Falling back to JSON file storage...');
-        db = require('./database-fallback');
-        storage = null;
-        useSupabase = false;
-        
-        app.listen(PORT, () => {
-            console.log(`🚀 BABISHA Admin Server running on http://localhost:${PORT}`);
-            console.log(`📁 Using JSON file storage (data/ folder)`);
-            console.log(`📸 Using local file storage (uploads/ folder)`);
-        });
+        try {
+            db = require('./database-fallback');
+            storage = null;
+            useSupabase = false;
+            await initializeAdmin();
+            
+            app.listen(PORT, () => {
+                console.log(`🚀 BABISHA Admin Server running on http://localhost:${PORT}`);
+                console.log(`📁 Using JSON file storage (data/ folder)`);
+                console.log(`📸 Using local file storage (uploads/ folder)`);
+                console.log(`✅ Admin panel is fully functional`);
+                console.log(`\n🔐 Admin Login: admin@babisha.com / admin123`);
+            });
+        } catch (fallbackError) {
+            console.error('❌ Fallback initialization failed:', fallbackError);
+            process.exit(1);
+        }
     }
 }
 

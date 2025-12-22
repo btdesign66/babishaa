@@ -273,12 +273,19 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
             existingImages = [];
             document.getElementById('imagePreviewGrid').innerHTML = '';
         } else {
-            const error = await response.json();
-            showAlert(error.error || 'Failed to save product', 'error');
+            let errorMessage = 'Failed to save product';
+            try {
+                const error = await response.json();
+                errorMessage = error.error || errorMessage;
+            } catch (e) {
+                errorMessage = `Server error: ${response.status} ${response.statusText}`;
+            }
+            showAlert(errorMessage, 'error');
+            console.error('Product save error:', errorMessage);
         }
     } catch (error) {
         console.error('Error saving product:', error);
-        showAlert('Error saving product', 'error');
+        showAlert('Error saving product: ' + error.message, 'error');
     }
 });
 

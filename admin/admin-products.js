@@ -16,9 +16,19 @@ if (typeof requireAuth === 'function' && !requireAuth()) {
 }
 
 // Load products
+let isLoadingProducts = false;
+
 async function loadProducts() {
+    if (isLoadingProducts) return;
+    isLoadingProducts = true;
+    
     try {
-        const token = getAuthToken();
+        const token = typeof getAuthToken === 'function' ? getAuthToken() : localStorage.getItem('adminToken');
+        if (!token) {
+            window.location.href = 'login.html';
+            return;
+        }
+        
         const response = await fetch(`${API_BASE_URL}/products`, {
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -26,14 +36,21 @@ async function loadProducts() {
         });
 
         if (response.ok) {
-            products = await response.json();
+            products = await response.json() || [];
             renderProducts();
         } else {
+            if (response.status === 401) {
+                window.location.href = 'login.html';
+                return;
+            }
+            console.error('Failed to load products:', response.status);
             showAlert('Failed to load products', 'error');
         }
     } catch (error) {
         console.error('Error loading products:', error);
-        showAlert('Error loading products', 'error');
+        showAlert('Error loading products: ' + error.message, 'error');
+    } finally {
+        isLoadingProducts = false;
     }
 }
 

@@ -9,7 +9,9 @@ let imageFiles = [];
 let existingImages = [];
 
 // Check authentication
-if (!requireAuth()) {
+let isInitialized = false;
+
+if (typeof requireAuth === 'function' && !requireAuth()) {
     // Redirect will happen in admin-auth.js
 }
 
@@ -224,7 +226,9 @@ function removeNewImage(index) {
 }
 
 // Handle product form submission
-document.getElementById('productForm').addEventListener('submit', async (e) => {
+const productForm = document.getElementById('productForm');
+if (productForm) {
+    productForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const formData = new FormData();
@@ -250,7 +254,12 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
     });
 
     try {
-        const token = getAuthToken();
+        const token = typeof getAuthToken === 'function' ? getAuthToken() : localStorage.getItem('adminToken');
+        if (!token) {
+            window.location.href = 'login.html';
+            return;
+        }
+        
         const url = productId 
             ? `${API_BASE_URL}/products/${productId}`
             : `${API_BASE_URL}/products`;
@@ -287,7 +296,8 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
         console.error('Error saving product:', error);
         showAlert('Error saving product: ' + error.message, 'error');
     }
-});
+    });
+}
 
 // Edit product
 function editProduct(productId) {
@@ -376,12 +386,20 @@ if (imageUploadArea) {
 
 // Initialize
 window.addEventListener('DOMContentLoaded', () => {
+    if (isInitialized) return;
+    isInitialized = true;
+    
+    // Wait for auth functions to be available
+    if (typeof requireAuth === 'function' && !requireAuth()) {
+        return;
+    }
+    
     loadProducts();
     
     // Check if URL has action=add parameter
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('action') === 'add') {
-        showProductForm();
+        setTimeout(() => showProductForm(), 100);
     }
 });
 

@@ -27,7 +27,9 @@ function initQuillEditor() {
 }
 
 // Check authentication
-if (!requireAuth()) {
+let isBlogsInitialized = false;
+
+if (typeof requireAuth === 'function' && !requireAuth()) {
     // Redirect will happen in admin-auth.js
 }
 

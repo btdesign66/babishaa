@@ -68,7 +68,9 @@
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
     z-index: 1000;
     overflow-y: auto;
-    transition: var(--transition);
+    transition: transform 0.3s ease, width 0.3s ease;
+    transform: translateX(0);
+    will-change: transform;
 }
 
 .admin-sidebar-header {
@@ -124,6 +126,8 @@
     margin-left: 260px;
     padding: 2rem;
     min-height: 100vh;
+    transition: margin-left 0.3s ease;
+    will-change: margin-left;
 }
 
 .admin-header {

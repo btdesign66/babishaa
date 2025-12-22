@@ -354,13 +354,20 @@ document.getElementById('blogTitle')?.addEventListener('input', (e) => {
 
 // Initialize
 window.addEventListener('DOMContentLoaded', () => {
+    if (isBlogsInitialized) return;
+    isBlogsInitialized = true;
+    
+    if (typeof requireAuth === 'function' && !requireAuth()) {
+        return;
+    }
+    
     initQuillEditor();
     loadBlogs();
     
     // Check if URL has action=add parameter
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('action') === 'add') {
-        showBlogForm();
+        setTimeout(() => showBlogForm(), 100);
     }
 });
 

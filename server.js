@@ -13,9 +13,50 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const bodyParser = require('body-parser');
 
-// Supabase imports
-const db = require('./database');
-const storage = require('./storage-service');
+// Supabase imports with fallback
+let db, storage;
+let useSupabase = false;
+
+// Initialize database with fallback
+async function initializeDatabase() {
+    try {
+        // Try to load Supabase modules
+        const supabaseDb = require('./database');
+        const supabaseStorage = require('./storage-service');
+        
+        // Test database connection
+        try {
+            await supabaseDb.pool.query('SELECT NOW()');
+            db = supabaseDb;
+            storage = supabaseStorage;
+            useSupabase = true;
+            console.log('✅ Using Supabase PostgreSQL database');
+            
+            // Test Supabase Storage
+            try {
+                const { data: buckets } = await supabaseDb.supabase.storage.listBuckets();
+                console.log('✅ Supabase Storage connected');
+            } catch (storageErr) {
+                console.warn('⚠️ Supabase Storage not available, using local storage');
+            }
+        } catch (dbErr) {
+            console.warn('⚠️ Supabase database connection failed, using JSON file fallback');
+            console.warn('   Error:', dbErr.message);
+            db = require('./database-fallback');
+            storage = null;
+            useSupabase = false;
+        }
+    } catch (error) {
+        console.warn('⚠️ Supabase modules not available, using JSON file fallback');
+        console.warn('   Error:', error.message);
+        db = require('./database-fallback');
+        storage = null;
+        useSupabase = false;
+    }
+}
+
+// Initialize immediately (but don't block)
+initializeDatabase();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -259,11 +300,22 @@ app.get('/api/admin/products/:id', authenticateToken, async (req, res) => {
 // Create Product
 app.post('/api/admin/products', authenticateToken, upload.array('images', 10), async (req, res) => {
     try {
-        // Upload images to Supabase Storage
+        // Upload images to Supabase Storage or use local paths
         let imageUrls = [];
         if (req.files && req.files.length > 0) {
-            const uploadResults = await storage.uploadImages(req.files, 'products');
-            imageUrls = uploadResults.map(result => result.url);
+            if (useSupabase && storage) {
+                try {
+                    const uploadResults = await storage.uploadImages(req.files, 'products');
+                    imageUrls = uploadResults.map(result => result.url);
+                } catch (storageError) {
+                    console.warn('Supabase Storage upload failed, using local paths:', storageError.message);
+                    // Fallback to local paths
+                    imageUrls = req.files.map(file => `http://localhost:3001/uploads/products/${file.filename}`);
+                }
+            } else {
+                // Use local file paths
+                imageUrls = req.files.map(file => `http://localhost:3001/uploads/products/${file.filename}`);
+            }
         }
         
         // Parse specifications safely
@@ -316,9 +368,20 @@ app.put('/api/admin/products/:id', authenticateToken, upload.array('images', 10)
 
         // Upload new images if provided
         if (req.files && req.files.length > 0) {
-            const uploadResults = await storage.uploadImages(req.files, 'products');
-            const newImageUrls = uploadResults.map(result => result.url);
-            imageUrls = [...imageUrls, ...newImageUrls];
+            if (useSupabase && storage) {
+                try {
+                    const uploadResults = await storage.uploadImages(req.files, 'products');
+                    const newImageUrls = uploadResults.map(result => result.url);
+                    imageUrls = [...imageUrls, ...newImageUrls];
+                } catch (storageError) {
+                    console.warn('Supabase Storage upload failed, using local paths:', storageError.message);
+                    const newImageUrls = req.files.map(file => `http://localhost:3001/uploads/products/${file.filename}`);
+                    imageUrls = [...imageUrls, ...newImageUrls];
+                }
+            } else {
+                const newImageUrls = req.files.map(file => `http://localhost:3001/uploads/products/${file.filename}`);
+                imageUrls = [...imageUrls, ...newImageUrls];
+            }
         }
         
         // Parse specifications safely
@@ -367,12 +430,16 @@ app.delete('/api/admin/products/:id', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'Product not found' });
         }
         
-        // Delete images from Supabase Storage
-        if (product.images && product.images.length > 0) {
+        // Delete images from Supabase Storage (if using Supabase)
+        if (useSupabase && storage && product.images && product.images.length > 0) {
             for (const imageUrl of product.images) {
-                const imagePath = storage.extractPathFromUrl(imageUrl);
-                if (imagePath) {
-                    await storage.deleteImage(imagePath);
+                try {
+                    const imagePath = storage.extractPathFromUrl(imageUrl);
+                    if (imagePath) {
+                        await storage.deleteImage(imagePath);
+                    }
+                } catch (err) {
+                    console.warn('Error deleting image from storage:', err.message);
                 }
             }
         }
@@ -453,11 +520,22 @@ app.post('/api/admin/blogs', authenticateToken, upload.single('featuredImage'), 
         let featuredImageUrl = null;
         let featuredImagePath = null;
         
-        // Upload featured image to Supabase Storage if provided
+        // Upload featured image to Supabase Storage or use local path
         if (req.file) {
-            const uploadResult = await storage.uploadImage(req.file, 'blogs');
-            featuredImageUrl = uploadResult.url;
-            featuredImagePath = uploadResult.path;
+            if (useSupabase && storage) {
+                try {
+                    const uploadResult = await storage.uploadImage(req.file, 'blogs');
+                    featuredImageUrl = uploadResult.url;
+                    featuredImagePath = uploadResult.path;
+                } catch (storageError) {
+                    console.warn('Supabase Storage upload failed, using local path:', storageError.message);
+                    featuredImageUrl = `http://localhost:3001/uploads/blogs/${req.file.filename}`;
+                    featuredImagePath = `/uploads/blogs/${req.file.filename}`;
+                }
+            } else {
+                featuredImageUrl = `http://localhost:3001/uploads/blogs/${req.file.filename}`;
+                featuredImagePath = `/uploads/blogs/${req.file.filename}`;
+            }
         }
         
         const blogData = {
@@ -494,15 +572,26 @@ app.put('/api/admin/blogs/:id', authenticateToken, upload.single('featuredImage'
 
         // Update featured image if new one uploaded
         if (req.file) {
-            // Delete old image from Supabase Storage
-            if (existingBlog.featured_image_path) {
-                await storage.deleteImage(existingBlog.featured_image_path);
+            if (useSupabase && storage) {
+                try {
+                    // Delete old image from Supabase Storage
+                    if (existingBlog.featured_image_path) {
+                        await storage.deleteImage(existingBlog.featured_image_path);
+                    }
+                    
+                    // Upload new image
+                    const uploadResult = await storage.uploadImage(req.file, 'blogs');
+                    featuredImageUrl = uploadResult.url;
+                    featuredImagePath = uploadResult.path;
+                } catch (storageError) {
+                    console.warn('Supabase Storage upload failed, using local path:', storageError.message);
+                    featuredImageUrl = `http://localhost:3001/uploads/blogs/${req.file.filename}`;
+                    featuredImagePath = `/uploads/blogs/${req.file.filename}`;
+                }
+            } else {
+                featuredImageUrl = `http://localhost:3001/uploads/blogs/${req.file.filename}`;
+                featuredImagePath = `/uploads/blogs/${req.file.filename}`;
             }
-            
-            // Upload new image
-            const uploadResult = await storage.uploadImage(req.file, 'blogs');
-            featuredImageUrl = uploadResult.url;
-            featuredImagePath = uploadResult.path;
         }
 
         const blogData = {
@@ -533,9 +622,13 @@ app.delete('/api/admin/blogs/:id', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'Blog not found' });
         }
         
-        // Delete featured image from Supabase Storage
-        if (blog.featured_image_path) {
-            await storage.deleteImage(blog.featured_image_path);
+        // Delete featured image from Supabase Storage (if using Supabase)
+        if (useSupabase && storage && blog.featured_image_path) {
+            try {
+                await storage.deleteImage(blog.featured_image_path);
+            } catch (err) {
+                console.warn('Error deleting image from storage:', err.message);
+            }
         }
         
         await db.deleteBlog(req.params.id);
@@ -591,25 +684,56 @@ app.get('/api/blogs/:slug', async (req, res) => {
 // Initialize server
 async function startServer() {
     try {
-        // Test database connection
-        const testResult = await db.pool.query('SELECT NOW()');
-        console.log('✅ Database connected:', testResult.rows[0].now);
-        
-        // Test Supabase Storage connection
-        const { data: buckets } = await db.supabase.storage.listBuckets();
-        console.log('✅ Supabase Storage connected');
-        
         await ensureDirectories();
+        
+        // Wait a moment for database initialization
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Re-check if Supabase is working, otherwise use fallback
+        if (!useSupabase) {
+            try {
+                await db.pool.query('SELECT NOW()');
+                useSupabase = true;
+                console.log('✅ Supabase connection established');
+            } catch (err) {
+                // Use fallback
+                if (db.pool) {
+                    // If db has pool but connection failed, switch to fallback
+                    db = require('./database-fallback');
+                    storage = null;
+                }
+                await initializeAdmin();
+            }
+        }
         
         app.listen(PORT, () => {
             console.log(`🚀 BABISHA Admin Server running on http://localhost:${PORT}`);
-            console.log(`📊 Using Supabase PostgreSQL database`);
-            console.log(`📸 Using Supabase Storage for images`);
+            if (useSupabase && db.pool) {
+                console.log(`📊 Using Supabase PostgreSQL database`);
+                if (storage) {
+                    console.log(`📸 Using Supabase Storage for images`);
+                } else {
+                    console.log(`📸 Using local file storage (uploads/ folder)`);
+                }
+            } else {
+                console.log(`📁 Using JSON file storage (data/ folder)`);
+                console.log(`📸 Using local file storage (uploads/ folder)`);
+                console.log(`⚠️  To use Supabase, configure supabase-config.js with correct password and Service Role Key`);
+                console.log(`✅ Admin panel will work with local JSON storage`);
+            }
         });
     } catch (error) {
         console.error('❌ Server initialization error:', error);
-        console.error('Please check your Supabase configuration in supabase-config.js');
-        process.exit(1);
+        console.error('Falling back to JSON file storage...');
+        db = require('./database-fallback');
+        storage = null;
+        useSupabase = false;
+        
+        app.listen(PORT, () => {
+            console.log(`🚀 BABISHA Admin Server running on http://localhost:${PORT}`);
+            console.log(`📁 Using JSON file storage (data/ folder)`);
+            console.log(`📸 Using local file storage (uploads/ folder)`);
+        });
     }
 }
 

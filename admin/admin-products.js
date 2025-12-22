@@ -243,10 +243,19 @@ function removeNewImage(index) {
 }
 
 // Handle product form submission
+let isSubmitting = false;
+
 const productForm = document.getElementById('productForm');
 if (productForm) {
     productForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    if (isSubmitting) {
+        console.log('Form submission already in progress');
+        return;
+    }
+    
+    isSubmitting = true;
     
     const formData = new FormData();
     const productId = document.getElementById('productId').value;
@@ -291,13 +300,23 @@ if (productForm) {
         });
 
         if (response.ok) {
+            const result = await response.json();
+            console.log('Product saved successfully:', result);
             showAlert(productId ? 'Product updated successfully!' : 'Product created successfully!', 'success');
-            bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
-            loadProducts();
+            
+            const modal = bootstrap.Modal.getInstance(document.getElementById('productModal'));
+            if (modal) modal.hide();
+            
+            // Reset form
             document.getElementById('productForm').reset();
+            document.getElementById('productId').value = '';
+            editingProductId = null;
             imageFiles = [];
             existingImages = [];
             document.getElementById('imagePreviewGrid').innerHTML = '';
+            
+            // Reload products
+            await loadProducts();
         } else {
             let errorMessage = 'Failed to save product';
             try {
@@ -307,11 +326,13 @@ if (productForm) {
                 errorMessage = `Server error: ${response.status} ${response.statusText}`;
             }
             showAlert(errorMessage, 'error');
-            console.error('Product save error:', errorMessage);
+            console.error('Product save error:', errorMessage, response.status);
         }
     } catch (error) {
         console.error('Error saving product:', error);
         showAlert('Error saving product: ' + error.message, 'error');
+    } finally {
+        isSubmitting = false;
     }
     });
 }

@@ -307,6 +307,8 @@ app.get('/api/admin/products/:id', authenticateToken, async (req, res) => {
 // Create Product
 app.post('/api/admin/products', authenticateToken, upload.array('images', 10), async (req, res) => {
     try {
+        console.log('Creating product...', req.body);
+        
         // Upload images to Supabase Storage or use local paths
         let imageUrls = [];
         if (req.files && req.files.length > 0) {
@@ -338,27 +340,30 @@ app.post('/api/admin/products', authenticateToken, upload.array('images', 10), a
         }
         
         const productData = {
-            name: req.body.name,
-            category: req.body.category,
-            description: req.body.description,
+            name: req.body.name || 'Untitled Product',
+            category: req.body.category || 'Uncategorized',
+            description: req.body.description || '',
             price: parseFloat(req.body.price) || 0,
             originalPrice: req.body.originalPrice ? parseFloat(req.body.originalPrice) : null,
             discountPrice: req.body.discountPrice ? parseFloat(req.body.discountPrice) : null,
             images: imageUrls,
             stock: parseInt(req.body.stock) || 0,
-            isActive: req.body.isActive === 'true' || req.body.isActive === true,
+            isActive: req.body.isActive === 'true' || req.body.isActive === true || req.body.isActive === '1',
             specifications: specifications,
             supplier: req.body.supplier || 'BABISHA Collections',
             rating: parseFloat(req.body.rating) || 0,
             reviews: parseInt(req.body.reviews) || 0,
-            onSale: req.body.onSale === 'true' || req.body.onSale === true,
+            onSale: req.body.onSale === 'true' || req.body.onSale === true || req.body.onSale === '1',
             savings: req.body.savings ? parseFloat(req.body.savings) : null
         };
 
+        console.log('Product data:', productData);
         const newProduct = await db.createProduct(productData);
+        console.log('Product created:', newProduct.id);
         res.status(201).json(newProduct);
     } catch (error) {
         console.error('Create product error:', error);
+        console.error('Error stack:', error.stack);
         res.status(500).json({ error: 'Internal server error: ' + error.message });
     }
 });
@@ -462,8 +467,7 @@ app.delete('/api/admin/products/:id', authenticateToken, async (req, res) => {
 // Delete Product Image
 app.delete('/api/admin/products/:id/images/:imageIndex', authenticateToken, async (req, res) => {
     try {
-        const products = await readJSONFile('products.json');
-        const product = products.find(p => p.id === req.params.id);
+        const product = await db.getProductById(req.params.id);
 
         if (!product) {
             return res.status(404).json({ error: 'Product not found' });
@@ -471,25 +475,40 @@ app.delete('/api/admin/products/:id/images/:imageIndex', authenticateToken, asyn
 
         const imageIndex = parseInt(req.params.imageIndex);
         if (product.images && product.images[imageIndex]) {
-            // Optionally delete file from filesystem
-            const imagePath = path.join(__dirname, product.images[imageIndex]);
-            try {
-                await fs.unlink(imagePath);
-            } catch (err) {
-                console.error('Error deleting image file:', err);
+            const imageUrl = product.images[imageIndex];
+            
+            // Delete from storage if using Supabase
+            if (useSupabase && storage) {
+                try {
+                    const imagePath = storage.extractPathFromUrl(imageUrl);
+                    if (imagePath) {
+                        await storage.deleteImage(imagePath);
+                    }
+                } catch (err) {
+                    console.warn('Error deleting image from storage:', err.message);
+                }
+            } else {
+                // Delete local file
+                try {
+                    const imagePath = path.join(__dirname, imageUrl.replace('http://localhost:3001', ''));
+                    await fs.unlink(imagePath);
+                } catch (err) {
+                    console.warn('Error deleting local image file:', err.message);
+                }
             }
             
+            // Remove from array
             product.images.splice(imageIndex, 1);
-            product.updatedAt = new Date().toISOString();
             
-            await writeJSONFile('products.json', products);
-            res.json({ message: 'Image deleted successfully', product });
+            // Update product
+            const updatedProduct = await db.updateProduct(req.params.id, { images: product.images });
+            res.json({ message: 'Image deleted successfully', product: updatedProduct });
         } else {
             res.status(404).json({ error: 'Image not found' });
         }
     } catch (error) {
         console.error('Delete image error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: 'Internal server error: ' + error.message });
     }
 });
 

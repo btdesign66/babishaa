@@ -209,8 +209,19 @@ function removeBlogImage() {
 }
 
 // Handle blog form submission
-document.getElementById('blogForm').addEventListener('submit', async (e) => {
+let isSubmittingBlog = false;
+
+const blogForm = document.getElementById('blogForm');
+if (blogForm) {
+    blogForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    if (isSubmittingBlog) {
+        console.log('Blog form submission already in progress');
+        return;
+    }
+    
+    isSubmittingBlog = true;
     
     // Get content from Quill editor
     const content = quillEditor.root.innerHTML;

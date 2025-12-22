@@ -7,6 +7,7 @@ let fabricData = [];
 let filteredFabrics = [];
 let currentPageNumber = 1;
 let itemsPerPage = 6;
+const API_BASE_URL = 'http://localhost:3001/api';
 
 // Sample Fabric Data - All Collections
 const sampleFabrics = [
@@ -2759,21 +2760,61 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 1000);
 });
 
+// Fetch products from API
+async function fetchProductsFromAPI() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/products`);
+        if (response.ok) {
+            const apiProducts = await response.json();
+            // Transform API products to match frontend format
+            return apiProducts.map(product => ({
+                id: product.id,
+                name: product.name,
+                category: product.category,
+                price: product.price,
+                originalPrice: product.originalPrice,
+                image: product.images && product.images[0] ? product.images[0] : 'images/placeholder.jpg',
+                images: product.images || [],
+                description: product.description,
+                specifications: product.specifications || {},
+                supplier: product.supplier || 'BABISHA Collections',
+                rating: product.rating || 0,
+                reviews: product.reviews || 0,
+                onSale: product.onSale || false,
+                savings: product.savings || null,
+                stock: product.stock || 0,
+                isActive: product.isActive !== false
+            }));
+        }
+    } catch (error) {
+        console.warn('Failed to fetch products from API, using sample data:', error);
+    }
+    return null;
+}
+
 // Initialize App Function
-function initializeApp() {
+async function initializeApp() {
     console.log('Initializing app...');
     
-    // Ensure sampleFabrics is defined
-    if (typeof sampleFabrics === 'undefined' || !sampleFabrics || sampleFabrics.length === 0) {
-        console.error('sampleFabrics is not defined or empty!');
-        return;
+    // Try to fetch from API first
+    const apiProducts = await fetchProductsFromAPI();
+    
+    if (apiProducts && apiProducts.length > 0) {
+        console.log('Products loaded from API:', apiProducts.length);
+        fabricData = apiProducts;
+        filteredFabrics = [...fabricData];
+    } else {
+        // Fallback to sample data
+        console.log('Using sample fabrics data');
+        if (typeof sampleFabrics === 'undefined' || !sampleFabrics || sampleFabrics.length === 0) {
+            console.error('sampleFabrics is not defined or empty!');
+            return;
+        }
+        fabricData = [...sampleFabrics];
+        filteredFabrics = [...fabricData];
     }
     
-    fabricData = [...sampleFabrics];
-    filteredFabrics = [...fabricData];
-    
     console.log('Fabric data loaded:', fabricData.length, 'fabrics');
-    console.log('Sample fabrics array length:', sampleFabrics.length);
     
     // Initialize page-specific functionality
     const currentPage = getCurrentPage();

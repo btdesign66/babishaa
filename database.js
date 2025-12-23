@@ -504,6 +504,39 @@ async function getAdminUserById(id) {
     }
 }
 
+// ==================== ADMIN INITIALIZATION ====================
+
+async function initializeAdmin() {
+    const client = await pool.connect();
+    try {
+        // Check if admin user exists
+        const existingAdmin = await client.query(
+            'SELECT * FROM admin_users WHERE email = $1',
+            ['admin@babisha.com']
+        );
+        
+        if (existingAdmin.rows.length === 0) {
+            // Create default admin user (password: admin123)
+            const bcrypt = require('bcryptjs');
+            const hashedPassword = await bcrypt.hash('admin123', 10);
+            
+            await client.query(`
+                INSERT INTO admin_users (email, password, name, role)
+                VALUES ($1, $2, $3, $4)
+            `, ['admin@babisha.com', hashedPassword, 'Admin User', 'admin']);
+            
+            console.log('✅ Default admin user created');
+        } else {
+            console.log('✅ Admin user already exists');
+        }
+    } catch (error) {
+        console.warn('⚠️ Admin initialization warning:', error.message);
+        // Don't throw - admin might already exist
+    } finally {
+        client.release();
+    }
+}
+
 // ==================== DASHBOARD STATS ====================
 
 async function getDashboardStats() {
@@ -558,11 +591,13 @@ module.exports = {
     // Admin
     getAdminUserByEmail,
     getAdminUserById,
+    initializeAdmin,
     
     // Dashboard
     getDashboardStats,
     
-    // Supabase client for storage
-    supabase
+    // Supabase client and pool for storage
+    supabase,
+    pool
 };
 

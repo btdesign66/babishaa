@@ -723,9 +723,15 @@ async function startServer() {
         storage = dbInit.storage;
         useSupabase = dbInit.useSupabase;
         
-        // Initialize admin user if using JSON fallback
-        if (!useSupabase) {
-            await initializeAdmin();
+        // Initialize admin user
+        try {
+            await db.initializeAdmin();
+        } catch (adminErr) {
+            console.warn('⚠️ Admin initialization warning:', adminErr.message);
+            // If using JSON fallback, initialize admin
+            if (!useSupabase) {
+                await initializeAdmin();
+            }
         }
         
         app.listen(PORT, () => {

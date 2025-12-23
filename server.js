@@ -543,6 +543,8 @@ app.get('/api/admin/blogs/:id', authenticateToken, async (req, res) => {
 // Create Blog
 app.post('/api/admin/blogs', authenticateToken, upload.single('featuredImage'), async (req, res) => {
     try {
+        console.log('Creating blog...', req.body);
+        
         let featuredImageUrl = null;
         let featuredImagePath = null;
         
@@ -565,22 +567,25 @@ app.post('/api/admin/blogs', authenticateToken, upload.single('featuredImage'), 
         }
         
         const blogData = {
-            title: req.body.title,
-            slug: req.body.slug || req.body.title.toLowerCase().replace(/\s+/g, '-'),
-            content: req.body.content,
-            excerpt: req.body.excerpt || req.body.content.substring(0, 200),
+            title: req.body.title || 'Untitled Blog',
+            slug: req.body.slug || (req.body.title ? req.body.title.toLowerCase().replace(/\s+/g, '-') : 'untitled-blog'),
+            content: req.body.content || '',
+            excerpt: req.body.excerpt || (req.body.content ? req.body.content.substring(0, 200) : ''),
             featuredImageUrl: featuredImageUrl,
             featuredImagePath: featuredImagePath,
-            metaTitle: req.body.metaTitle || req.body.title,
-            metaDescription: req.body.metaDescription || req.body.excerpt || req.body.content.substring(0, 160),
+            metaTitle: req.body.metaTitle || req.body.title || 'Untitled Blog',
+            metaDescription: req.body.metaDescription || req.body.excerpt || (req.body.content ? req.body.content.substring(0, 160) : ''),
             status: req.body.status || 'draft',
             author: req.user.name || 'Admin'
         };
 
+        console.log('Blog data:', blogData);
         const newBlog = await db.createBlog(blogData);
+        console.log('Blog created:', newBlog.id);
         res.status(201).json(newBlog);
     } catch (error) {
         console.error('Create blog error:', error);
+        console.error('Error stack:', error.stack);
         res.status(500).json({ error: 'Internal server error: ' + error.message });
     }
 });

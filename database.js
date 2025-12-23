@@ -159,10 +159,29 @@ async function createProduct(productData) {
         // Insert images if provided
         if (productData.images && productData.images.length > 0) {
             for (let i = 0; i < productData.images.length; i++) {
+                let imageUrl, imagePath;
+                
+                // Handle both formats: string URLs or objects with url/path
+                if (typeof productData.images[i] === 'string') {
+                    imageUrl = productData.images[i];
+                    // Extract path from URL if it's a local URL
+                    if (imageUrl.includes('/uploads/')) {
+                        imagePath = imageUrl.replace('http://localhost:3001', '').replace('http://127.0.0.1:3001', '');
+                    } else {
+                        imagePath = imageUrl; // For external URLs, use URL as path
+                    }
+                } else if (productData.images[i] && typeof productData.images[i] === 'object') {
+                    imageUrl = productData.images[i].url || productData.images[i];
+                    imagePath = productData.images[i].path || imageUrl;
+                } else {
+                    imageUrl = String(productData.images[i]);
+                    imagePath = imageUrl;
+                }
+                
                 await client.query(`
                     INSERT INTO product_images (product_id, image_url, image_path, display_order)
                     VALUES ($1, $2, $3, $4)
-                `, [product.id, productData.images[i], productData.images[i], i]);
+                `, [product.id, imageUrl, imagePath, i]);
             }
         }
         
@@ -338,6 +357,8 @@ async function getBlogBySlug(slug) {
 async function createBlog(blogData) {
     const client = await pool.connect();
     try {
+        await client.query('BEGIN');
+        
         const result = await client.query(`
             INSERT INTO blogs (
                 title, slug, content, excerpt, featured_image_url, featured_image_path,
@@ -345,18 +366,20 @@ async function createBlog(blogData) {
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             RETURNING *
         `, [
-            blogData.title,
-            blogData.slug,
-            blogData.content,
-            blogData.excerpt,
+            blogData.title || 'Untitled Blog',
+            blogData.slug || 'untitled-blog',
+            blogData.content || '',
+            blogData.excerpt || '',
             blogData.featuredImageUrl || null,
             blogData.featuredImagePath || null,
-            blogData.metaTitle || blogData.title,
-            blogData.metaDescription || blogData.excerpt,
+            blogData.metaTitle || blogData.title || 'Untitled Blog',
+            blogData.metaDescription || blogData.excerpt || '',
             blogData.status || 'draft',
             blogData.author || 'Admin',
             blogData.status === 'published' ? new Date() : null
         ]);
+        
+        await client.query('COMMIT');
         
         const row = result.rows[0];
         return {
@@ -376,6 +399,9 @@ async function createBlog(blogData) {
             updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString(),
             publishedAt: row.published_at ? new Date(row.published_at).toISOString() : null
         };
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
     } finally {
         client.release();
     }

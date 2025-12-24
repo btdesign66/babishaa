@@ -1,30 +1,48 @@
 /**
  * Supabase Configuration
- * Replace [YOUR-PASSWORD] with your actual Supabase password
+ * 
+ * INSTRUCTIONS:
+ * 1. Get your Supabase project URL from: Dashboard > Settings > API > Project URL
+ * 2. Get your Service Role Key from: Dashboard > Settings > API > Service Role Key (secret)
+ * 3. Get your Database Connection String from: Dashboard > Settings > Database > Connection String
+ *    - Use "Session Pooler" mode (port 6543) for server applications
+ * 4. Replace the values below with your actual credentials
  */
 
 const { createClient } = require('@supabase/supabase-js');
 
-// Parse connection string
-// Password: babisha@123BT (the @ symbol is URL-encoded as %40)
-// IMPORTANT: Use Session Pooler for IPv4 compatibility (not Direct connection)
-// Get the exact connection string from: Supabase Dashboard > Settings > Database > Connection String
-// Switch to "Session Pooler" mode and copy the connection string
-// Replace the hostname below with the one from your dashboard (usually aws-0-us-east-1.pooler.supabase.com or similar)
-const connectionString = process.env.SUPABASE_DB_URL || 'postgresql://postgres.xuyzhodfxmefruvsgvfh:babisha%40123BT@aws-0-us-east-1.pooler.supabase.com:6543/postgres';
+// ==================== SUPABASE PROJECT CREDENTIALS ====================
+// Replace these with your actual Supabase project credentials
 
-// Extract Supabase project URL and anon key from connection string
-// For Supabase, we need both the database connection and the Supabase client
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://xuyzhodfxmefruvsgvfh.supabase.co';
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'sb_publishable_AD8G79bYIJPhV2uO6tjPTw_TfHxlGA3';
-// IMPORTANT: For admin operations, you need the Service Role Key (not publishable key)
-// Get it from Supabase Dashboard > Settings > API > Service Role Key
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || 'sb_publishable_AD8G79bYIJPhV2uO6tjPTw_TfHxlGA3';
+// Your Supabase project URL
+// Set via environment variable: SUPABASE_URL
+const SUPABASE_URL = process.env.SUPABASE_URL;
+if (!SUPABASE_URL) {
+    throw new Error('SUPABASE_URL environment variable is required');
+}
 
-// Create Supabase client for Storage and API
+// Service Role Key (secret key that bypasses Row Level Security)
+// Set via environment variable: SUPABASE_SERVICE_KEY
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+if (!SUPABASE_SERVICE_KEY) {
+    throw new Error('SUPABASE_SERVICE_KEY environment variable is required');
+}
+
+// Database connection string (Session Pooler mode)
+// Set via environment variable: SUPABASE_DB_URL
+// Format: postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-1-[REGION].pooler.supabase.com:5432/postgres
+// URL-encode special characters in password (@ becomes %40)
+const connectionString = process.env.SUPABASE_DB_URL;
+if (!connectionString) {
+    throw new Error('SUPABASE_DB_URL environment variable is required');
+}
+
+// ==================== CREATE SUPABASE CLIENT ====================
+// This client is used for Storage and API operations
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-// PostgreSQL connection using pg library
+// ==================== POSTGRESQL CONNECTION ====================
+// This is used for direct database queries
 const { Pool } = require('pg');
 const pool = new Pool({
     connectionString: connectionString,
@@ -33,10 +51,10 @@ const pool = new Pool({
     }
 });
 
+// ==================== EXPORTS ====================
 module.exports = {
-    supabase,
-    pool,
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
+    supabase,           // Supabase client for Storage/API
+    pool,               // PostgreSQL pool for direct queries
+    SUPABASE_URL,       // Project URL
+    SUPABASE_SERVICE_KEY // Service Role Key
 };
-

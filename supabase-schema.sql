@@ -1,9 +1,11 @@
 -- BABISHA Database Schema for Supabase PostgreSQL
+-- Run this SQL in Supabase SQL Editor to create all tables
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Admin Users Table
+-- ==================== ADMIN USERS TABLE ====================
+-- Stores admin login credentials
 CREATE TABLE IF NOT EXISTS admin_users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -14,7 +16,8 @@ CREATE TABLE IF NOT EXISTS admin_users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Products Table
+-- ==================== PRODUCTS TABLE ====================
+-- Stores product information
 CREATE TABLE IF NOT EXISTS products (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
@@ -35,7 +38,8 @@ CREATE TABLE IF NOT EXISTS products (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Product Images Table (for multiple images per product)
+-- ==================== PRODUCT IMAGES TABLE ====================
+-- Stores multiple images per product
 CREATE TABLE IF NOT EXISTS product_images (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
@@ -46,7 +50,8 @@ CREATE TABLE IF NOT EXISTS product_images (
     CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
--- Blogs Table
+-- ==================== BLOGS TABLE ====================
+-- Stores blog posts
 CREATE TABLE IF NOT EXISTS blogs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title VARCHAR(255) NOT NULL,
@@ -64,7 +69,8 @@ CREATE TABLE IF NOT EXISTS blogs (
     published_at TIMESTAMP WITH TIME ZONE
 );
 
--- Create indexes for better performance
+-- ==================== INDEXES ====================
+-- Improve query performance
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
 CREATE INDEX IF NOT EXISTS idx_products_is_active ON products(is_active);
 CREATE INDEX IF NOT EXISTS idx_products_on_sale ON products(on_sale);
@@ -73,7 +79,10 @@ CREATE INDEX IF NOT EXISTS idx_blogs_slug ON blogs(slug);
 CREATE INDEX IF NOT EXISTS idx_product_images_product_id ON product_images(product_id);
 CREATE INDEX IF NOT EXISTS idx_admin_users_email ON admin_users(email);
 
--- Create function to update updated_at timestamp
+-- ==================== TRIGGERS ====================
+-- Auto-update updated_at timestamp
+
+-- Function to update updated_at column
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -82,18 +91,27 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Create triggers for updated_at
-CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON products
+-- Trigger for admin_users
+DROP TRIGGER IF EXISTS update_admin_users_updated_at ON admin_users;
+CREATE TRIGGER update_admin_users_updated_at 
+    BEFORE UPDATE ON admin_users 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_blogs_updated_at BEFORE UPDATE ON blogs
+-- Trigger for products
+DROP TRIGGER IF EXISTS update_products_updated_at ON products;
+CREATE TRIGGER update_products_updated_at 
+    BEFORE UPDATE ON products 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_admin_users_updated_at BEFORE UPDATE ON admin_users
+-- Trigger for blogs
+DROP TRIGGER IF EXISTS update_blogs_updated_at ON blogs;
+CREATE TRIGGER update_blogs_updated_at 
+    BEFORE UPDATE ON blogs 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- ==================== DEFAULT ADMIN USER ====================
 -- Insert default admin user (password: admin123)
--- Password hash for 'admin123' using bcrypt
+-- Password is hashed using bcrypt
 INSERT INTO admin_users (email, password, name, role)
 VALUES (
     'admin@babisha.com',
@@ -102,4 +120,10 @@ VALUES (
     'admin'
 )
 ON CONFLICT (email) DO NOTHING;
+
+-- ==================== NOTES ====================
+-- 1. Default admin login: admin@babisha.com / admin123
+-- 2. Images will be stored in Supabase Storage buckets: 'products' and 'blogs'
+-- 3. All timestamps are in UTC with timezone
+-- 4. Product images are linked via foreign key with CASCADE delete
 

@@ -1,6 +1,6 @@
 /**
  * Database Service - Supabase PostgreSQL
- * Handles all database operations
+ * Handles all database operations using Supabase
  */
 
 const { pool, supabase } = require('./supabase-config');
@@ -251,10 +251,17 @@ async function updateProduct(id, productData) {
             // Insert new images
             if (productData.images.length > 0) {
                 for (let i = 0; i < productData.images.length; i++) {
+                    const imageUrl = typeof productData.images[i] === 'string' 
+                        ? productData.images[i] 
+                        : productData.images[i].url || productData.images[i];
+                    const imagePath = typeof productData.images[i] === 'string'
+                        ? productData.images[i]
+                        : productData.images[i].path || imageUrl;
+                    
                     await client.query(`
                         INSERT INTO product_images (product_id, image_url, image_path, display_order)
                         VALUES ($1, $2, $3, $4)
-                    `, [id, productData.images[i], productData.images[i], i]);
+                    `, [id, imageUrl, imagePath, i]);
                 }
             }
         }
@@ -290,7 +297,24 @@ async function getAllBlogs() {
             SELECT * FROM blogs
             ORDER BY created_at DESC
         `);
-        return result.rows;
+        
+        return result.rows.map(row => ({
+            id: row.id,
+            title: row.title,
+            slug: row.slug,
+            content: row.content,
+            excerpt: row.excerpt,
+            featuredImage: row.featured_image_url,
+            featuredImageUrl: row.featured_image_url,
+            featuredImagePath: row.featured_image_path,
+            metaTitle: row.meta_title,
+            metaDescription: row.meta_description,
+            status: row.status,
+            author: row.author,
+            createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
+            updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString(),
+            publishedAt: row.published_at ? new Date(row.published_at).toISOString() : null
+        }));
     } finally {
         client.release();
     }
@@ -414,9 +438,6 @@ async function updateBlog(id, blogData) {
         if (!existingBlog) {
             throw new Error('Blog not found');
         }
-        
-        const wasDraft = existingBlog.status === 'draft';
-        const isNowPublished = blogData.status === 'published';
         
         const result = await client.query(`
             UPDATE blogs SET

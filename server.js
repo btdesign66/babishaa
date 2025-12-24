@@ -3,6 +3,9 @@
  * Express.js server with authentication and CRUD APIs
  */
 
+// Load environment variables from .env file
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -13,7 +16,7 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const bodyParser = require('body-parser');
 
-// Supabase imports with fallback
+// Database - Supabase with JSON fallback
 let db, storage;
 let useSupabase = false;
 
@@ -57,6 +60,14 @@ async function initializeDatabase() {
     } catch (error) {
         console.warn('⚠️ Supabase modules not available, using JSON file fallback');
         console.warn('   Error:', error.message);
+        db = require('./database-fallback');
+        storage = null;
+        useSupabase = false;
+    }
+    
+    // Ensure db is always set (double-check fallback)
+    if (!db) {
+        console.warn('⚠️ Database not initialized, forcing fallback...');
         db = require('./database-fallback');
         storage = null;
         useSupabase = false;
@@ -359,7 +370,7 @@ app.post('/api/admin/products', authenticateToken, upload.array('images', 10), a
 
         console.log('Product data:', productData);
         const newProduct = await db.createProduct(productData);
-        console.log('Product created:', newProduct.id);
+        console.log('Product created successfully:', newProduct.id);
         res.status(201).json(newProduct);
     } catch (error) {
         console.error('Create product error:', error);
@@ -581,7 +592,7 @@ app.post('/api/admin/blogs', authenticateToken, upload.single('featuredImage'), 
 
         console.log('Blog data:', blogData);
         const newBlog = await db.createBlog(blogData);
-        console.log('Blog created:', newBlog.id);
+        console.log('Blog created successfully:', newBlog.id);
         res.status(201).json(newBlog);
     } catch (error) {
         console.error('Create blog error:', error);
@@ -607,7 +618,7 @@ app.put('/api/admin/blogs/:id', authenticateToken, upload.single('featuredImage'
                 try {
                     // Delete old image from Supabase Storage
                     if (existingBlog.featured_image_path) {
-                        await storage.deleteImage(existingBlog.featured_image_path);
+                        await storage.deleteImage(existingBlog.featured_image_path, 'blogs');
                     }
                     
                     // Upload new image
@@ -656,7 +667,7 @@ app.delete('/api/admin/blogs/:id', authenticateToken, async (req, res) => {
         // Delete featured image from Supabase Storage (if using Supabase)
         if (useSupabase && storage && blog.featured_image_path) {
             try {
-                await storage.deleteImage(blog.featured_image_path);
+                await storage.deleteImage(blog.featured_image_path, 'blogs');
             } catch (err) {
                 console.warn('Error deleting image from storage:', err.message);
             }
@@ -725,12 +736,21 @@ async function startServer() {
         
         // Initialize admin user
         try {
-            await db.initializeAdmin();
+            if (typeof db.initializeAdmin === 'function') {
+                await db.initializeAdmin();
+            } else if (!useSupabase) {
+                // Use server's initializeAdmin for fallback
+                await initializeAdmin();
+            }
         } catch (adminErr) {
             console.warn('⚠️ Admin initialization warning:', adminErr.message);
-            // If using JSON fallback, initialize admin
+            // If using JSON fallback, try server's initializeAdmin
             if (!useSupabase) {
-                await initializeAdmin();
+                try {
+                    await initializeAdmin();
+                } catch (e) {
+                    console.warn('⚠️ Fallback admin initialization warning:', e.message);
+                }
             }
         }
         
@@ -747,32 +767,12 @@ async function startServer() {
                 console.log(`📁 Using JSON file storage (data/ folder)`);
                 console.log(`📸 Using local file storage (uploads/ folder)`);
                 console.log(`✅ Admin panel is fully functional with local storage`);
-                console.log(`💡 To use Supabase, configure supabase-config.js with:`);
-                console.log(`   - Database password in connection string`);
-                console.log(`   - Service Role Key (not publishable key)`);
             }
             console.log(`\n🔐 Admin Login: admin@babisha.com / admin123`);
         });
     } catch (error) {
         console.error('❌ Server initialization error:', error);
-        console.error('Falling back to JSON file storage...');
-        try {
-            db = require('./database-fallback');
-            storage = null;
-            useSupabase = false;
-            await initializeAdmin();
-            
-            app.listen(PORT, () => {
-                console.log(`🚀 BABISHA Admin Server running on http://localhost:${PORT}`);
-                console.log(`📁 Using JSON file storage (data/ folder)`);
-                console.log(`📸 Using local file storage (uploads/ folder)`);
-                console.log(`✅ Admin panel is fully functional`);
-                console.log(`\n🔐 Admin Login: admin@babisha.com / admin123`);
-            });
-        } catch (fallbackError) {
-            console.error('❌ Fallback initialization failed:', fallbackError);
-            process.exit(1);
-        }
+        process.exit(1);
     }
 }
 

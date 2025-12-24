@@ -1,112 +1,161 @@
-# BABISHA - Fabric E-commerce Website
+# BABISHA Collections - Admin Panel
 
-Babisha – Where Every Fabric Tells a Story. Discover premium-quality fabrics that blend tradition, comfort, and contemporary style.
+E-commerce admin panel for managing products and blogs with Supabase backend.
 
-A modern, responsive e-commerce website for fabric sales with WhatsApp integration.
+## 🚀 Features
 
-## Features
+- ✅ Product Management (CRUD operations)
+- ✅ Blog Management (CRUD operations)
+- ✅ Image Upload to Supabase Storage
+- ✅ Admin Authentication
+- ✅ Dashboard with Statistics
+- ✅ Supabase PostgreSQL Database
+- ✅ Responsive Admin Interface
 
-- **Responsive Design**: Mobile-first approach with Bootstrap 5
-- **Product Catalog**: Beautiful product cards with detailed specifications
-- **WhatsApp Integration**: Direct ordering through WhatsApp with pre-filled messages
-- **Modern UI**: Clean, professional design with smooth animations
-- **Product Filtering**: Category and price range filters
-- **Logo Integration**: Custom logo display across all pages
+## 📋 Prerequisites
 
-## Technologies Used
+- Node.js (v14 or higher)
+- npm or yarn
+- Supabase account and project
 
-- HTML5
-- CSS3 (Custom styles with CSS variables)
-- JavaScript (ES6+)
-- Bootstrap 5
-- Font Awesome Icons
+## 🔧 Setup
 
-## Project Structure
+### 1. Clone Repository
+
+```bash
+git clone <your-repo-url>
+cd BABISHA
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+### 3. Configure Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_SERVICE_KEY=your_service_role_key
+SUPABASE_DB_URL=your_database_connection_string
+PORT=3001
+JWT_SECRET=your-secret-key
+```
+
+**Get these values from:**
+- Supabase Dashboard → Settings → API (for URL and Service Key)
+- Supabase Dashboard → Settings → Database → Connection String (Session Pooler)
+
+### 4. Setup Database
+
+1. Go to Supabase Dashboard → SQL Editor
+2. Copy contents of `supabase-schema.sql`
+3. Paste and run in SQL Editor
+
+### 5. Create Storage Buckets
+
+In Supabase Dashboard → Storage:
+- Create bucket: `products` (Public)
+- Create bucket: `blogs` (Public)
+
+### 6. Start Server
+
+```bash
+node server.js
+```
+
+Server will run on: http://localhost:3001
+
+## 🔐 Admin Login
+
+- **URL:** http://localhost:8000/admin/login.html
+- **Email:** admin@babisha.com
+- **Password:** admin123
+
+## 📁 Project Structure
 
 ```
 BABISHA/
-├── index.html          # Homepage
-├── products.html       # Product listing page
-├── about.html          # About us page
-├── contact.html        # Contact page
-├── product-detail.html # Individual product detail page
-├── styles.css          # Main stylesheet
-├── script.js           # JavaScript functionality
-├── logo.png            # Company logo
-├── images/             # Product images
-└── README.md           # This file
+├── admin/              # Admin panel frontend
+├── public/             # Public frontend
+├── server.js           # Express backend server
+├── database.js         # Supabase database operations
+├── storage-service.js  # Supabase Storage operations
+├── supabase-config.js  # Supabase configuration
+├── supabase-schema.sql # Database schema
+└── .env                # Environment variables (not in git)
 ```
 
-## Key Features
+## 🗄️ Database Schema
 
-### WhatsApp Integration
-- **Order Now Button**: Directly opens WhatsApp with pre-filled product details
-- **Detailed Messages**: Includes product name, price, specifications, and supplier info
-- **Professional Formatting**: Well-structured messages for better customer experience
+- `admin_users` - Admin login credentials
+- `products` - Product information
+- `product_images` - Multiple images per product
+- `blogs` - Blog posts
 
-### Product Management
-- **Dynamic Product Cards**: JavaScript-generated product listings
-- **Filtering System**: Category and price range filters
-- **Product Details**: Comprehensive product information display
-- **Sale Badges**: Automatic discount calculations and display
+## 🚀 Deployment
 
-### Responsive Design
-- **Mobile-First**: Optimized for all device sizes
-- **Touch-Friendly**: Easy navigation on mobile devices
-- **Fast Loading**: Optimized images and efficient code
+### Deploy to Vercel/Netlify
 
-## Setup Instructions
+1. Push code to GitHub
+2. Connect repository to Vercel/Netlify
+3. Add environment variables in deployment settings
+4. Deploy!
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/mahimamj/Babisha.git
-   cd Babisha
-   ```
+### Environment Variables for Production
 
-2. **Start a local server**:
-   ```bash
-   # Using Python
-   python -m http.server 8000
-   
-   # Using Node.js
-   npx http-server
-   
-   # Using PHP
-   php -S localhost:8000
-   ```
+Make sure to set these in your hosting platform:
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_KEY`
+- `SUPABASE_DB_URL`
+- `PORT` (optional, defaults to 3001)
+- `JWT_SECRET` (use a strong secret in production)
 
-3. **Open in browser**:
-   Navigate to `http://localhost:8000`
+## 📝 API Endpoints
 
-## WhatsApp Integration Details
+### Admin Endpoints (Require Authentication)
+- `POST /api/admin/login` - Admin login
+- `GET /api/admin/products` - Get all products
+- `POST /api/admin/products` - Create product
+- `PUT /api/admin/products/:id` - Update product
+- `DELETE /api/admin/products/:id` - Delete product
+- `GET /api/admin/blogs` - Get all blogs
+- `POST /api/admin/blogs` - Create blog
+- `PUT /api/admin/blogs/:id` - Update blog
+- `DELETE /api/admin/blogs/:id` - Delete blog
 
-The Order Now buttons automatically generate detailed WhatsApp messages including:
+### Public Endpoints
+- `GET /api/products` - Get active products
+- `GET /api/products/:id` - Get single product
+- `GET /api/blogs` - Get published blogs
+- `GET /api/blogs/:slug` - Get single blog
 
-- Product name (bold formatting)
-- Current price per meter
-- Original price and savings percentage (if on sale)
-- Product description
-- Complete specifications (GSM, Material, Width, Colors, Origin)
-- Supplier information
-- Professional closing message
+## 🔒 Security
 
-## Contact Information
+- ✅ Environment variables for sensitive data
+- ✅ JWT authentication for admin routes
+- ✅ Password hashing with bcrypt
+- ✅ Service Role Key for admin operations
 
-- **WhatsApp**: +91 9624113555
-- **Website**: https://mahimamj.github.io/Babisha
+## 📦 Tech Stack
 
-## License
+- **Backend:** Node.js, Express.js
+- **Database:** Supabase PostgreSQL
+- **Storage:** Supabase Storage
+- **Authentication:** JWT
+- **Frontend:** HTML, CSS, JavaScript
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+## 📄 License
 
-## Contributing
+Private project - All rights reserved
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+## 👤 Author
 
-## Support
+BABISHA Collections
 
-For support, email your-email@example.com or contact us via WhatsApp.
+---
+
+**Note:** Make sure to never commit `.env` file or `supabase-config.js` with actual credentials to GitHub!

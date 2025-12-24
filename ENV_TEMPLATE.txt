@@ -1,0 +1,10 @@
+# Supabase Configuration
+# Copy these to a .env file in your project root
+# Never commit .env to git!
+
+SUPABASE_URL=https://enbfnuagqqpabxlhceqx.supabase.co
+SUPABASE_SERVICE_KEY=your_service_role_key_here
+SUPABASE_DB_URL=your_connection_string_here
+PORT=3001
+JWT_SECRET=babisha-admin-secret-key-change-in-production
+

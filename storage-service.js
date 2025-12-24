@@ -14,12 +14,15 @@ async function uploadImage(file, folder = 'products') {
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}${fileExt}`;
         const filePath = `${folder}/${fileName}`;
         
+        // Determine bucket name based on folder
+        const bucketName = folder === 'blogs' ? 'blogs' : 'products';
+        
         // Read file buffer
         const fileBuffer = await fs.readFile(file.path);
         
         // Upload to Supabase Storage
         const { data, error } = await supabase.storage
-            .from('babisha-images') // Storage bucket name
+            .from(bucketName)
             .upload(filePath, fileBuffer, {
                 contentType: file.mimetype,
                 upsert: false
@@ -31,7 +34,7 @@ async function uploadImage(file, folder = 'products') {
         
         // Get public URL
         const { data: urlData } = supabase.storage
-            .from('babisha-images')
+            .from(bucketName)
             .getPublicUrl(filePath);
         
         // Clean up local file
@@ -59,10 +62,17 @@ async function uploadImages(files, folder = 'products') {
 }
 
 // Delete image from Supabase Storage
-async function deleteImage(imagePath) {
+async function deleteImage(imagePath, bucketName = 'products') {
     try {
+        // Extract bucket name from path if it contains folder structure
+        if (imagePath.includes('products/')) {
+            bucketName = 'products';
+        } else if (imagePath.includes('blogs/')) {
+            bucketName = 'blogs';
+        }
+        
         const { error } = await supabase.storage
-            .from('babisha-images')
+            .from(bucketName)
             .remove([imagePath]);
         
         if (error) {
@@ -81,9 +91,12 @@ async function deleteImage(imagePath) {
 function extractPathFromUrl(url) {
     try {
         // Extract path from Supabase Storage URL
-        // Format: https://[project].supabase.co/storage/v1/object/public/babisha-images/[path]
-        const match = url.match(/babisha-images\/(.+)$/);
-        return match ? match[1] : null;
+        // Format: https://[project].supabase.co/storage/v1/object/public/[bucket]/[path]
+        const match = url.match(/\/(products|blogs)\/(.+)$/);
+        if (match) {
+            return match[2]; // Return just the path part
+        }
+        return null;
     } catch (error) {
         return null;
     }

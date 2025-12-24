@@ -175,6 +175,30 @@ async function getAdminUserById(id) {
     return adminData.users.find(u => u.id === id) || null;
 }
 
+// ==================== ADMIN INITIALIZATION ====================
+
+async function initializeAdmin() {
+    try {
+        const adminData = await readJSONFile('admin.json');
+        if (adminData.users.length === 0) {
+            const bcrypt = require('bcryptjs');
+            const { v4: uuidv4 } = require('uuid');
+            const hashedPassword = await bcrypt.hash('admin123', 10);
+            adminData.users.push({
+                id: uuidv4(),
+                email: 'admin@babisha.com',
+                password: hashedPassword,
+                name: 'Admin User',
+                role: 'admin'
+            });
+            await writeJSONFile('admin.json', adminData);
+            console.log('✅ Default admin user created in JSON fallback');
+        }
+    } catch (error) {
+        console.warn('⚠️ Admin initialization warning:', error.message);
+    }
+}
+
 // ==================== DASHBOARD STATS ====================
 
 async function getDashboardStats() {
@@ -213,6 +237,7 @@ module.exports = {
     deleteBlog,
     getAdminUserByEmail,
     getAdminUserById,
+    initializeAdmin,
     getDashboardStats,
     pool: mockPool, // Mock pool for compatibility
     supabase: null // No Supabase in fallback mode

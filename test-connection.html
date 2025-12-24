@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Server Connection</title>
+</head>
+<body>
+    <h1>Server Connection Test</h1>
+    <div id="status">Testing...</div>
+    <script>
+        async function testConnection() {
+            const statusDiv = document.getElementById('status');
+            try {
+                const response = await fetch('http://localhost:3001/api/admin/verify', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer test'
+                    }
+                });
+                statusDiv.innerHTML = `✅ Server is running!<br>Status: ${response.status}<br>This is expected - server is responding.`;
+                statusDiv.style.color = 'green';
+            } catch (error) {
+                statusDiv.innerHTML = `❌ Server connection failed:<br>${error.message}`;
+                statusDiv.style.color = 'red';
+            }
+        }
+        testConnection();
+    </script>
+</body>
+</html>
+

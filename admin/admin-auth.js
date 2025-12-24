@@ -5,13 +5,57 @@
 const API_BASE_URL = 'http://localhost:3001/api/admin';
 
 // Check if user is already logged in
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
+    // First, test server connection
+    await testServerConnection();
+    
     const token = localStorage.getItem('adminToken');
     if (token) {
         // Verify token
         verifyToken(token);
     }
 });
+
+// Test server connection on page load
+async function testServerConnection() {
+    const errorAlert = document.getElementById('errorAlert');
+    if (!errorAlert) return;
+    
+    // Hide error by default, show only if server is actually unreachable
+    errorAlert.classList.add('d-none');
+    
+    try {
+        // Try to reach the server with a simple request
+        // Use a timeout to avoid hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+        
+        const response = await fetch(`${API_BASE_URL}/verify`, {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer test'
+            },
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        // If we get any response (even 401/403), server is running
+        // Status doesn't matter - we just need to know server responded
+        console.log('✅ Server is reachable (status:', response.status + ')');
+        errorAlert.classList.add('d-none');
+    } catch (error) {
+        // Server is not reachable or request timed out
+        if (error.name === 'AbortError') {
+            console.error('❌ Server connection timeout');
+            errorAlert.textContent = 'Connection timeout. Please check if the server is running on http://localhost:3001';
+        } else {
+            console.error('❌ Server connection failed:', error);
+            errorAlert.textContent = 'Connection error. Please check if the server is running on http://localhost:3001';
+        }
+        errorAlert.classList.remove('d-none');
+    }
+}
 
 // Toggle password visibility
 function togglePassword() {
@@ -93,11 +137,20 @@ async function verifyToken(token) {
             // Token is invalid, clear storage
             localStorage.removeItem('adminToken');
             localStorage.removeItem('adminUser');
+            // Hide any error alerts when clearing invalid token
+            const errorAlert = document.getElementById('errorAlert');
+            if (errorAlert) errorAlert.classList.add('d-none');
         }
     } catch (error) {
         console.error('Token verification error:', error);
         localStorage.removeItem('adminToken');
         localStorage.removeItem('adminUser');
+        // Only show connection error if server is actually unreachable
+        const errorAlert = document.getElementById('errorAlert');
+        if (errorAlert && error.name === 'TypeError' && error.message.includes('fetch')) {
+            errorAlert.textContent = 'Connection error. Please check if the server is running on http://localhost:3001';
+            errorAlert.classList.remove('d-none');
+        }
     }
 }
 

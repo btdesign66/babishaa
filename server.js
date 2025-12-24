@@ -87,10 +87,11 @@ app.use(cors({
 }));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static('public'));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve static files from root (for index.html, products.html, etc.)
+app.use(express.static(__dirname));
 // Serve admin panel static files
 app.use('/admin', express.static(path.join(__dirname, 'admin')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Ensure data directory exists
 const DATA_DIR = path.join(__dirname, 'data');
@@ -108,7 +109,7 @@ async function ensureDirectories() {
 }
 
 // Configure multer for file uploads
-const storage = multer.diskStorage({
+const multerStorage = multer.diskStorage({
     destination: (req, file, cb) => {
         const uploadPath = req.path.includes('/blogs') ? BLOG_UPLOADS_DIR : UPLOADS_DIR;
         cb(null, uploadPath);
@@ -120,7 +121,7 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({
-    storage: storage,
+    storage: multerStorage,
     limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
     fileFilter: (req, file, cb) => {
         const allowedTypes = /jpeg|jpg|png|gif|webp/;
@@ -756,15 +757,19 @@ async function startServer() {
         
         app.listen(PORT, () => {
             console.log(`🚀 BABISHA Admin Server running on http://localhost:${PORT}`);
+            console.log(`\n📱 Access Points:`);
+            console.log(`   • Main Website: http://localhost:${PORT}/index.html`);
+            console.log(`   • Admin Panel: http://localhost:${PORT}/admin/login.html`);
+            console.log(`   • API: http://localhost:${PORT}/api/admin`);
             if (useSupabase) {
-                console.log(`📊 Using Supabase PostgreSQL database`);
+                console.log(`\n📊 Using Supabase PostgreSQL database`);
                 if (storage) {
                     console.log(`📸 Using Supabase Storage for images`);
                 } else {
                     console.log(`📸 Using local file storage (uploads/ folder)`);
                 }
             } else {
-                console.log(`📁 Using JSON file storage (data/ folder)`);
+                console.log(`\n📁 Using JSON file storage (data/ folder)`);
                 console.log(`📸 Using local file storage (uploads/ folder)`);
                 console.log(`✅ Admin panel is fully functional with local storage`);
             }

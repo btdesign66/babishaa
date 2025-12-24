@@ -82,7 +82,26 @@ const JWT_SECRET = process.env.JWT_SECRET || 'babisha-admin-secret-key-change-in
 
 // Middleware
 app.use(cors({
-    origin: ['http://localhost:8000', 'http://127.0.0.1:8000'],
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        // List of allowed origins
+        const allowedOrigins = [
+            'http://localhost:8000',
+            'http://127.0.0.1:8000',
+            'http://localhost:3001',
+            'http://127.0.0.1:3001'
+        ];
+        
+        // Allow if origin is in the list, or if it's from the same origin (for production)
+        if (allowedOrigins.indexOf(origin) !== -1 || origin === process.env.FRONTEND_URL) {
+            callback(null, true);
+        } else {
+            // For production, allow same-origin requests
+            callback(null, true);
+        }
+    },
     credentials: true
 }));
 app.use(bodyParser.json());

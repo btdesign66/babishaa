@@ -2,7 +2,15 @@
  * Admin Authentication JavaScript
  */
 
-const API_BASE_URL = 'http://localhost:3001/api/admin';
+// Dynamic API URL - works in both localhost and production
+const API_BASE_URL = (() => {
+    const origin = window.location.origin;
+    // If on localhost, use port 3001, otherwise use same origin
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        return 'http://localhost:3001/api/admin';
+    }
+    return `${origin}/api/admin`;
+})();
 
 // Check if user is already logged in
 window.addEventListener('DOMContentLoaded', async () => {
@@ -96,7 +104,19 @@ document.getElementById('adminLoginForm')?.addEventListener('submit', async (e) 
             body: JSON.stringify({ email, password })
         });
         
-        const data = await response.json();
+        let data;
+        try {
+            data = await response.json();
+        } catch (jsonError) {
+            console.error('Failed to parse response:', jsonError);
+            const text = await response.text();
+            console.error('Response text:', text);
+            errorAlert.textContent = 'Server error. Please check console for details.';
+            errorAlert.classList.remove('d-none');
+            loginBtn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Sign In';
+            loginBtn.disabled = false;
+            return;
+        }
         
         if (response.ok) {
             // Store token and user info
@@ -107,6 +127,7 @@ document.getElementById('adminLoginForm')?.addEventListener('submit', async (e) 
             window.location.href = 'dashboard.html';
         } else {
             // Show error
+            console.error('Login failed:', data);
             errorAlert.textContent = data.error || 'Login failed. Please try again.';
             errorAlert.classList.remove('d-none');
             loginBtn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Sign In';
@@ -114,7 +135,7 @@ document.getElementById('adminLoginForm')?.addEventListener('submit', async (e) 
         }
     } catch (error) {
         console.error('Login error:', error);
-        errorAlert.textContent = 'Connection error. Please check if the server is running.';
+        errorAlert.textContent = `Connection error: ${error.message}. Please check if the server is running on http://localhost:3001`;
         errorAlert.classList.remove('d-none');
         loginBtn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Sign In';
         loginBtn.disabled = false;

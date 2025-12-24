@@ -2,7 +2,15 @@
  * Admin Blogs Management JavaScript
  */
 
-const API_BASE_URL = 'http://localhost:3001/api/admin';
+// Dynamic API URL - works in both localhost and production
+const API_BASE_URL = (() => {
+    const origin = window.location.origin;
+    // If on localhost, use port 3001, otherwise use same origin
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        return 'http://localhost:3001/api/admin';
+    }
+    return `${origin}/api/admin`;
+})();
 let blogs = [];
 let editingBlogId = null;
 let blogImageFile = null;

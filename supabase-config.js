@@ -7,7 +7,11 @@ const { createClient } = require('@supabase/supabase-js');
 
 // Parse connection string
 // Password: babisha@123BT (the @ symbol is URL-encoded as %40)
-const connectionString = process.env.SUPABASE_DB_URL || 'postgresql://postgres:babisha%40123BT@db.xuyzhodfxmefruvsgvfh.supabase.co:5432/postgres';
+// IMPORTANT: Use Session Pooler for IPv4 compatibility (not Direct connection)
+// Get the exact connection string from: Supabase Dashboard > Settings > Database > Connection String
+// Switch to "Session Pooler" mode and copy the connection string
+// Replace the hostname below with the one from your dashboard (usually aws-0-us-east-1.pooler.supabase.com or similar)
+const connectionString = process.env.SUPABASE_DB_URL || 'postgresql://postgres.xuyzhodfxmefruvsgvfh:babisha%40123BT@aws-0-us-east-1.pooler.supabase.com:6543/postgres';
 
 // Extract Supabase project URL and anon key from connection string
 // For Supabase, we need both the database connection and the Supabase client

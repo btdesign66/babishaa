@@ -6,7 +6,8 @@
 const { createClient } = require('@supabase/supabase-js');
 
 // Parse connection string
-const connectionString = process.env.SUPABASE_DB_URL || 'postgresql://postgres:[YOUR-PASSWORD]@db.xuyzhodfxmefruvsgvfh.supabase.co:5432/postgres';
+// Password: babisha@123BT (the @ symbol is URL-encoded as %40)
+const connectionString = process.env.SUPABASE_DB_URL || 'postgresql://postgres:babisha%40123BT@db.xuyzhodfxmefruvsgvfh.supabase.co:5432/postgres';
 
 // Extract Supabase project URL and anon key from connection string
 // For Supabase, we need both the database connection and the Supabase client

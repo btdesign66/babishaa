@@ -12,7 +12,7 @@ uploads/
 .env.local
 .env.production
 
-# Sensitive configuration files (keep supabase-config.js - it uses env vars)
+# Note: supabase-config.js is included - it uses environment variables only
 
 # Logs
 logs/
